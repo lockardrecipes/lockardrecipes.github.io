@@ -17,7 +17,7 @@
   const normalize = value => String(value || "").trim().toLowerCase();
   const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
   const toRecipe = row => ({
-    id: row.id ?? null, name: row.name || "", url: row.url || "",
+    id: row.id ?? null, name: row.name || "", url: row.url || "", photo_url: row.photo_url || "",
     cook_method: tags(row.cook_method), effort: tags(row.effort), favorites: tags(row.favorites),
     course: tags(row.course), collection: tags(row.collection), cuisine: tags(row.cuisine),
     ingredients: row.ingredients || "", instructions: row.instructions || ""
@@ -50,14 +50,14 @@
   function photoMarkup(recipe){
     const key=normalize(recipe.url);
     const cached=key && imageCache[key];
-    const source=cached && cached.url ? `<img class="recipe-photo-img" src="${escapeHtml(cached.url)}" alt="Photo of ${escapeHtml(recipe.name)}" loading="lazy" referrerpolicy="no-referrer">` : "";
-    const pending=key && (!cached || (!cached.url && cached.retryAfter && cached.retryAfter<Date.now()));
+    const chosen=recipe.photo_url || (cached && cached.url) || "";
+    const source=chosen ? `<img class="recipe-photo-img" src="${escapeHtml(chosen)}" alt="Photo of ${escapeHtml(recipe.name)}" loading="lazy" referrerpolicy="no-referrer">` : "";
+    const pending=key && !recipe.photo_url && (!cached || (!cached.url && cached.retryAfter && cached.retryAfter<Date.now()));
     return `<div class="recipe-photo ${source?"has-photo":""}" data-photo-key="${escapeHtml(key)}" data-recipe-url="${escapeHtml(recipe.url)}"><div class="recipe-photo-placeholder" aria-hidden="true"><span>✿</span></div>${source}</div>`;
   }
   function render() {
     const found = filteredRecipes(), grid = $("recipeGrid");
     grid.classList.toggle("list-view",view==="list");
-    $("recipeCount").textContent=recipes.length;
     $("resultCount").textContent=`${found.length} ${found.length===1?"recipe":"recipes"}`;
     $("showingText").textContent=found.length===recipes.length?"Showing all recipes":`Showing ${found.length} of ${recipes.length} recipes`;
     $("activeFilterCount").textContent=Object.keys(activeFilters).length;
@@ -81,7 +81,7 @@
   }),{rootMargin:"220px"}) : null;
   function observePhoto(el){
     const url=el.dataset.recipeUrl, key=el.dataset.photoKey;
-    if(!url || !key)return;
+    if(!url || !key || el.querySelector(".recipe-photo-img"))return;
     const cached=imageCache[key];
     if(cached?.url){applyPhoto(el,cached.url);return;}
     if(cached?.retryAfter>Date.now())return;
@@ -140,18 +140,19 @@
   function closeModal(){$("recipeModal").classList.add("hidden");currentRecipe=null;}
   function tagPickerMarkup(key,label,selected){
     const options=[...new Set([...allTags(key),...selected])].sort((a,b)=>a.localeCompare(b));
-    const checks=options.map(tag=>`<label class="tag-option"><input type="checkbox" name="${key}" value="${escapeHtml(tag)}" ${selected.includes(tag)?"checked":""}><span>${escapeHtml(tag)}</span></label>`).join("");
-    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?`${selected.length} selected`:"Choose tags"}</span><span aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${checks||'<span class="tag-empty">No tags yet. Add one below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${label.toLowerCase()} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
+    const items=options.map(tag=>`<button type="button" class="tag-choice ${selected.includes(tag)?"selected":""}" data-tag-value="${escapeHtml(tag)}" aria-pressed="${selected.includes(tag)}">${escapeHtml(tag)}</button>`).join("");
+    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?selected.map(escapeHtml).join(", "):"Choose ${label.toLowerCase()}"}</span><span aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${items||'<span class="tag-empty">No tags yet. Add one below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${label.toLowerCase()} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
   }
   function refreshTagSummary(details){
-    const count=details.querySelectorAll('input[type="checkbox"]:checked').length;
-    details.querySelector(".tag-picker-summary").textContent=count?`${count} selected`:"Choose tags";
+    const selected=[...details.querySelectorAll('.tag-choice.selected')].map(b=>b.dataset.tagValue);
+    details.querySelector(".tag-picker-summary").textContent=selected.length?selected.join(", "):"Choose tags";
   }
   function openEditor(recipe=null) {
     currentRecipe=recipe;
     const selected=key=>Array.isArray(recipe?.[key])?recipe[key]:[];
     const nameAndLink=`<div class="form-field"><label for="field-name">Recipe name *</label><input id="field-name" name="name" type="text" value="${escapeHtml(recipe?.name||"")}" required></div>
-      <div class="form-field"><label for="field-url">Recipe link</label><input id="field-url" name="url" type="url" value="${escapeHtml(recipe?.url||"")}" placeholder="https://…"></div>`;
+      <div class="form-field"><label for="field-url">Recipe link</label><input id="field-url" name="url" type="url" value="${escapeHtml(recipe?.url||"")}" placeholder="https://…"></div>
+      <div class="form-field full"><label for="field-photo">Photo link</label><input id="field-photo" name="photo_url" type="url" value="${escapeHtml(recipe?.photo_url||"")}" placeholder="Paste a direct image URL (ending in .jpg, .png, etc.)"><span class="form-help">Use a direct link to the image, not the recipe webpage.</span></div>`;
     const pickers=categories.map(([key,label])=>tagPickerMarkup(key,label,selected(key))).join("");
     $("recipeModalContent").innerHTML=`<span class="modal-kicker">${recipe?"UPDATE A FAMILY FAVORITE":"ADD TO THE COLLECTION"}</span>
       <h2 class="modal-title" id="modalTitle">${recipe?"Edit recipe":"Add a recipe"}</h2>
@@ -161,12 +162,15 @@
     $("recipeModal").classList.remove("hidden");
     $("cancelEdit").addEventListener("click",()=>recipe?showRecipe(recipe):closeModal());
     $("recipeModalContent").querySelectorAll(".tag-picker").forEach(details=>{
-      details.addEventListener("change",()=>refreshTagSummary(details));
+      details.addEventListener("click",e=>{
+        const choice=e.target.closest(".tag-choice");
+        if(choice){choice.classList.toggle("selected");choice.setAttribute("aria-pressed",choice.classList.contains("selected")?"true":"false");refreshTagSummary(details);}
+      });
       details.querySelector("[data-add-tag]").addEventListener("click",()=>{
         const input=details.querySelector(".tag-add-row input"), value=input.value.trim(); if(!value)return;
-        let checkbox=[...details.querySelectorAll('input[type="checkbox"]')].find(x=>normalize(x.value)===normalize(value));
-        if(!checkbox){const label=document.createElement("label");label.className="tag-option";label.innerHTML=`<input type="checkbox" name="${details.dataset.tagPicker}"><span></span>`;checkbox=label.querySelector("input");checkbox.value=value;label.querySelector("span").textContent=value;details.querySelector(".tag-options").appendChild(label);}
-        checkbox.checked=true;input.value="";refreshTagSummary(details);
+        let choice=[...details.querySelectorAll(".tag-choice")].find(x=>normalize(x.dataset.tagValue)===normalize(value));
+        if(!choice){choice=document.createElement("button");choice.type="button";choice.className="tag-choice";choice.dataset.tagValue=value;choice.textContent=value;choice.setAttribute("aria-pressed","false");details.querySelector(".tag-options").appendChild(choice);}
+        choice.classList.add("selected");choice.setAttribute("aria-pressed","true");input.value="";refreshTagSummary(details);
       });
     });
     $("recipeForm").addEventListener("submit",saveRecipe);
@@ -176,8 +180,10 @@
     payload.name=String(formData.get("name")||"").trim();
     if(!payload.name){notify("Please add a recipe name.");return;}
     payload.url=String(formData.get("url")||"").trim();
+    payload.photo_url=String(formData.get("photo_url")||"").trim();
     if(payload.url && !safeUrl(payload.url)){notify("Please enter a valid http or https link.");return;}
-    for(const [key] of categories) payload[key]=[...form.querySelectorAll(`input[type="checkbox"][name="${key}"]:checked`)].map(input=>input.value);
+    if(payload.photo_url && !safeUrl(payload.photo_url)){notify("Please enter a valid http or https photo link.");return;}
+    for(const [key] of categories) payload[key]=[...form.querySelectorAll(`.tag-picker[data-tag-picker="${key}"] .tag-choice.selected`)].map(button=>button.dataset.tagValue);
     try {
       if(db) {
         const result=currentRecipe?.id
