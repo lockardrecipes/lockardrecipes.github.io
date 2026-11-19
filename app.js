@@ -73,7 +73,7 @@
       const meta = categories.flatMap(([key])=>r[key].map(value=>({key,value})));
       return `<article class="recipe-card" data-id="${escapeHtml(r.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)}">
         ${photoMarkup(r)}<div class="recipe-card-content"><div><div class="card-top"><span class="eyebrow">${escapeHtml(r.course[0] || "FAMILY RECIPE")}</span><span class="card-arrow">↗</span></div>
-        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(t=>`<span class="tag">${escapeHtml(displayTag(categories.find(([key])=>r[key].includes(t))?.[0] || "",t))}</span>`).join("")}</div></div></article>`;
+        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(({key,value})=>`<span class="tag ${key === "favorites" ? "tag-favorite" : ""}">${escapeHtml(displayTag(key,value))}</span>`).join("")}</div></div></article>`;
     }).join("");
     grid.querySelectorAll(".recipe-card").forEach(card=>{
       const open=()=>showRecipe(recipes.find(r=>String(r.id)===card.dataset.id));
