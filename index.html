@@ -374,7 +374,75 @@ function getField(row, names) {
 }
 
 // Convert spreadsheet rows into recipe objects.
+
 function normalizeRecipe(row) {
+
+    // Read individual category columns
+    const categories = [
+        "Cuisine",
+        "Cook Method",
+        "Effort",
+        "Collections",
+        "Course"
+    ];
+
+    // Start with any existing general tags
+    let tags = [];
+
+    const existingTags = getField(row, [
+        "Tags", "Tag", "Categories", "Category"
+    ]);
+
+    tags.push(...existingTags.split(/[,;|]/)
+        .map(t => t.trim())
+        .filter(Boolean));
+
+    // Add each separate category as a filter
+    categories.forEach(category => {
+
+        const value = getField(row, [category]);
+
+        if (value) {
+            value.split(/[,;|]/)
+                .map(t => t.trim())
+                .filter(Boolean)
+                .forEach(tag => {
+                    tags.push(category + ": " + tag);
+                });
+        }
+    });
+
+    // Handle Favorites separately
+    const favorite = getField(row, [
+        "Favorites", "Favorite", "Is Favorite"
+    ]).toLowerCase().trim();
+
+    if (["yes", "true", "1", "x", "⭐", "favorite"].includes(favorite)) {
+        tags.push("Favorites");
+    }
+
+    return {
+        name: getField(row, [
+            "Recipe", "Recipe Name", "Name", "Title"
+        ]),
+        ingredients: getField(row, [
+            "Ingredients", "Ingredient"
+        ]),
+        instructions: getField(row, [
+            "Instructions", "Directions", "Method", "Steps"
+        ]),
+        description: getField(row, [
+            "Description", "Notes", "Summary"
+        ]),
+        tags: [...new Set(tags)],
+        prepTime: getField(row, [
+            "Prep Time", "Cooking Time", "Time"
+        ]),
+        servings: getField(row, [
+            "Servings", "Yield"
+        ])
+    };
+}
     const name = getField(row, [
         "Recipe", "Recipe Name", "Name", "Title"
     ]);
