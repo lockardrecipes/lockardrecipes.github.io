@@ -3,10 +3,14 @@
   const CONFIG = window.RECIPE_APP_CONFIG || {};
   const hasSupabase = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase);
   const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
-  const categories = [
-    ["cook_method","Cook method"],["effort","Effort"],["favorites","Favorites"],
-    ["course","Course"],["collection","Collection"],["cuisine","Cuisine"]
-  ];
+ const categories = [
+  ["course","Course"],
+  ["cook_method","Cook Method"],
+  ["effort","Effort"],
+  ["cuisine","Cuisine"],
+  ["collection","Collection"],
+  ["favorites","Favorites"]
+];
   const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v2";
   let recipes = [], activeFilters = {}, view = "grid", currentRecipe = null, toastTimer;
   let imageCache = readImageCache();
@@ -130,7 +134,7 @@
   }
   function showRecipe(recipe) {
     if(!recipe)return; currentRecipe=recipe;
-    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag">${escapeHtml(displayTag(key,v))}</span>`)).join("");
+    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag ${key === "favorites" ? "tag-favorite" : ""}">${escapeHtml(displayTag(key,v))}</span>`)).join("");
     const url = safeUrl(recipe.url);
     $("recipeModalContent").innerHTML=`<span class="modal-kicker">FROM THE FAMILY RECIPE BOX</span>
       <h2 class="modal-title" id="modalTitle">${escapeHtml(recipe.name)}</h2>
