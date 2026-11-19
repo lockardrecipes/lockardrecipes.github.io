@@ -172,3 +172,10 @@ body{font-size:16px;background:var(--cream);color:var(--ink);font-family:'Manrop
 .recipe-photo-placeholder{display:flex;flex-direction:column;gap:7px;color:#9474b3;background:linear-gradient(135deg,#f2eafa,#e4d8f1);}
 .recipe-photo-placeholder small{font:600 10px 'Manrope',sans-serif;color:#826a99;letter-spacing:.2px}
 .recipe-photo.has-photo .recipe-photo-placeholder{display:none}
+
+
+/* Final display polish: fill photo frames and distinguish family favorites. */
+.recipe-photo-img{object-fit:cover!important;object-position:center center!important;padding:0!important;background:transparent!important;}
+.recipe-photo{background:#e9def4;}
+.recipe-photo.has-photo .recipe-photo-placeholder{display:none;}
+.recipe-card .tag-favorite,.modal-tags .tag-favorite{background:#f5d9ff!important;color:#9b22b5!important;border:1px solid #edc3fa!important;font-weight:800!important;}

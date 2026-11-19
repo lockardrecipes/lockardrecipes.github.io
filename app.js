@@ -3,9 +3,10 @@
   const CONFIG = window.RECIPE_APP_CONFIG || {};
   const hasSupabase = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase);
   const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
+  // Display and editor order requested by the Lockard family.
   const categories = [
-    ["cook_method","Cook method"],["effort","Effort"],["favorites","Favorites"],
-    ["course","Course"],["collection","Collection"],["cuisine","Cuisine"]
+    ["course","Course"],["cook_method","Cook method"],["effort","Effort"],
+    ["cuisine","Cuisine"],["collection","Collection"],["favorites","Favorites"]
   ];
   const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v2";
   let recipes = [], activeFilters = {}, view = "grid", currentRecipe = null, toastTimer;
@@ -15,7 +16,7 @@
   const $ = id => document.getElementById(id);
   const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const normalize = value => String(value || "").trim().toLowerCase();
-  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim()}'s favorite` : value;
+  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim().replace(/\s+/g," ").replace(/\b\w/g,c=>c.toUpperCase())}'s Favorite` : value;
   const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
   const toRecipe = row => ({
     id: row.id ?? null, name: row.name || "", url: row.url || "", photo_url: row.photo_url || "",
@@ -65,10 +66,10 @@
     $("showingText").textContent=found.length===recipes.length?"Showing all recipes":`Showing ${found.length} of ${recipes.length} recipes`;
     $("activeFilterCount").textContent=Object.keys(activeFilters).length;
     grid.innerHTML=found.map(r=>{
-      const meta = categories.flatMap(([key])=>r[key]).slice(0,4);
+      const meta = categories.flatMap(([key])=>(r[key] || []).map(value=>({key,value}))).slice(0,6);
       return `<article class="recipe-card" data-id="${escapeHtml(r.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)}">
         ${photoMarkup(r)}<div class="recipe-card-content"><div><div class="card-top"><span class="eyebrow">${escapeHtml(r.course[0] || "FAMILY RECIPE")}</span><span class="card-arrow">↗</span></div>
-        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(t=>`<span class="tag">${escapeHtml(displayTag(categories.find(([key])=>r[key].includes(t))?.[0] || "",t))}</span>`).join("")}</div></div></article>`;
+        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(({key,value})=>`<span class="tag ${key==="favorites"?"tag-favorite":""}">${escapeHtml(displayTag(key,value))}</span>`).join("")}</div></div></article>`;
     }).join("");
     grid.querySelectorAll(".recipe-card").forEach(card=>{
       const open=()=>showRecipe(recipes.find(r=>String(r.id)===card.dataset.id));
@@ -128,7 +129,7 @@
   }
   function showRecipe(recipe) {
     if(!recipe)return; currentRecipe=recipe;
-    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag">${escapeHtml(displayTag(key,v))}</span>`)).join("");
+    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag ${key==="favorites"?"tag-favorite":""}">${escapeHtml(displayTag(key,v))}</span>`)).join("");
     const url = safeUrl(recipe.url);
     $("recipeModalContent").innerHTML=`<span class="modal-kicker">FROM THE FAMILY RECIPE BOX</span>
       <h2 class="modal-title" id="modalTitle">${escapeHtml(recipe.name)}</h2>
