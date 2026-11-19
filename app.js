@@ -4,10 +4,10 @@
   const hasSupabase = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase);
   const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
   const categories = [
-    ["cook_method","Cook method"],["effort","Effort"],["favorites","Favorite person"],
+    ["cook_method","Cook method"],["effort","Effort"],["favorites","Favorites"],
     ["course","Course"],["collection","Collection"],["cuisine","Cuisine"]
   ];
-  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v1";
+  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v2";
   let recipes = [], activeFilters = {}, view = "grid", currentRecipe = null, toastTimer;
   let imageCache = readImageCache();
   const imageQueue = [];
@@ -15,6 +15,7 @@
   const $ = id => document.getElementById(id);
   const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const normalize = value => String(value || "").trim().toLowerCase();
+  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim()}'s favorite` : value;
   const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
   const toRecipe = row => ({
     id: row.id ?? null, name: row.name || "", url: row.url || "", photo_url: row.photo_url || "",
@@ -31,8 +32,8 @@
   function allTags(key) { return [...new Set(recipes.flatMap(r=>r[key] || []))].sort((a,b)=>a.localeCompare(b)); }
   function renderFilters() {
     $("filterGrid").innerHTML = categories.map(([key,label]) => {
-      const options = allTags(key).map(v=>`<option value="${escapeHtml(v)}" ${activeFilters[key]===v?"selected":""}>${escapeHtml(v)}</option>`).join("");
-      return `<div class="filter-group"><label for="filter-${key}">${label}</label><select id="filter-${key}" data-filter="${key}"><option value="">All ${label.toLowerCase()}s</option>${options}</select></div>`;
+      const options = allTags(key).map(v=>`<option value="${escapeHtml(v)}" ${activeFilters[key]===v?"selected":""}>${escapeHtml(displayTag(key,v))}</option>`).join("");
+      return `<div class="filter-group"><label for="filter-${key}">${label}</label><select id="filter-${key}" data-filter="${key}"><option value="">${key === "favorites" ? "All favorites" : `All ${label.toLowerCase()}s`}</option>${options}</select></div>`;
     }).join("");
     $("filterGrid").querySelectorAll("select").forEach(el=>el.addEventListener("change",e=>{
       activeFilters[e.target.dataset.filter]=e.target.value; if(!e.target.value) delete activeFilters[e.target.dataset.filter]; render();
@@ -48,13 +49,15 @@
     return found;
   }
   function photoMarkup(recipe){
-    const key=normalize(recipe.url);
-    const cached=key && imageCache[key];
-    const chosen=recipe.photo_url || (cached && cached.url) || "";
-    const source=chosen ? `<img class="recipe-photo-img" src="${escapeHtml(chosen)}" alt="Photo of ${escapeHtml(recipe.name)}" loading="lazy" referrerpolicy="no-referrer">` : "";
-    const pending=key && !recipe.photo_url && (!cached || (!cached.url && cached.retryAfter && cached.retryAfter<Date.now()));
-    return `<div class="recipe-photo ${source?"has-photo":""}" data-photo-key="${escapeHtml(key)}" data-recipe-url="${escapeHtml(recipe.url)}"><div class="recipe-photo-placeholder" aria-hidden="true"><span>✿</span></div>${source}</div>`;
+    const manual = safeUrl(recipe.photo_url);
+    const key = normalize(recipe.url);
+    const cached = key && imageCache[key];
+    const automatic = !manual && cached?.url ? cached.url : "";
+    const chosen = manual || automatic;
+    const source = chosen ? `<img class="recipe-photo-img" src="${escapeHtml(chosen)}" alt="Photo of ${escapeHtml(recipe.name)}" loading="lazy" referrerpolicy="no-referrer">` : "";
+    return `<div class="recipe-photo ${source?"has-photo":""}" data-photo-key="${escapeHtml(key)}" data-recipe-url="${escapeHtml(recipe.url)}" data-manual-photo="${manual?"1":"0"}"><div class="recipe-photo-placeholder" aria-hidden="true"><span>✿</span><small>Photo unavailable</small></div>${source}</div>`;
   }
+
   function render() {
     const found = filteredRecipes(), grid = $("recipeGrid");
     grid.classList.toggle("list-view",view==="list");
@@ -65,30 +68,33 @@
       const meta = categories.flatMap(([key])=>r[key]).slice(0,4);
       return `<article class="recipe-card" data-id="${escapeHtml(r.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)}">
         ${photoMarkup(r)}<div class="recipe-card-content"><div><div class="card-top"><span class="eyebrow">${escapeHtml(r.course[0] || "FAMILY RECIPE")}</span><span class="card-arrow">↗</span></div>
-        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("")}</div></div></article>`;
+        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(t=>`<span class="tag">${escapeHtml(displayTag(categories.find(([key])=>r[key].includes(t))?.[0] || "",t))}</span>`).join("")}</div></div></article>`;
     }).join("");
     grid.querySelectorAll(".recipe-card").forEach(card=>{
       const open=()=>showRecipe(recipes.find(r=>String(r.id)===card.dataset.id));
       card.addEventListener("click",open); card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open();}});
     });
     grid.querySelectorAll(".recipe-photo[data-recipe-url]").forEach(el=>observePhoto(el));
-    grid.querySelectorAll(".recipe-photo-img").forEach(img=>img.addEventListener("error",()=>{img.remove();img.closest(".recipe-photo")?.classList.remove("has-photo")}));
+    grid.querySelectorAll(".recipe-photo-img").forEach(img=>img.addEventListener("error",()=>{img.remove();img.closest(".recipe-photo")?.classList.remove("has-photo")},{once:true}));
     $("emptyState").classList.toggle("hidden",found.length>0);
   }
-  // Pulls the recipe page's Open Graph/preview image. Results are cached locally to limit repeat lookups.
+
+  // Best-effort automatic photo lookup from the recipe page's Open Graph image.
+  // Manually entered photo links always take priority. Results are cached per browser.
   const photoObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries=>entries.forEach(entry=>{
     if(entry.isIntersecting){photoObserver.unobserve(entry.target);queuePhoto(entry.target);}
-  }),{rootMargin:"220px"}) : null;
+  }),{rootMargin:"240px"}) : null;
   function observePhoto(el){
-    const url=el.dataset.recipeUrl, key=el.dataset.photoKey;
-    if(!url || !key || el.querySelector(".recipe-photo-img"))return;
+    if(el.dataset.manualPhoto==="1") return;
+    const key=el.dataset.photoKey, url=el.dataset.recipeUrl;
+    if(!key||!url)return;
     const cached=imageCache[key];
     if(cached?.url){applyPhoto(el,cached.url);return;}
     if(cached?.retryAfter>Date.now())return;
     if(photoObserver)photoObserver.observe(el); else queuePhoto(el);
   }
   function applyPhoto(el,url){
-    if(!el.isConnected)return;
+    if(!el.isConnected || el.dataset.manualPhoto==="1")return;
     const img=document.createElement("img"); img.className="recipe-photo-img"; img.alt="Recipe photo"; img.loading="lazy"; img.referrerPolicy="no-referrer"; img.src=url;
     img.addEventListener("error",()=>{img.remove();el.classList.remove("has-photo")},{once:true});
     el.appendChild(img); el.classList.add("has-photo");
@@ -106,7 +112,7 @@
   }
   async function fetchPhoto(el){
     const key=el.dataset.photoKey, pageUrl=el.dataset.recipeUrl;
-    if(!key||imageCache[key]?.url)return;
+    if(!key||imageCache[key]?.url || el.dataset.manualPhoto==="1")return;
     try{
       const endpoint=`https://api.microlink.io/?url=${encodeURIComponent(pageUrl)}&filter=image.url`;
       const response=await fetch(endpoint);
@@ -117,13 +123,12 @@
         imageCache[key]={url:imageUrl}; saveImageCache(); applyPhoto(el,imageUrl);
       } else {imageCache[key]={url:"",retryAfter:Date.now()+7*24*60*60*1000};saveImageCache();}
     }catch(error){
-      // The free metadata service has a daily request limit; retry later rather than repeatedly calling it.
       imageCache[key]={url:"",retryAfter:Date.now()+24*60*60*1000};saveImageCache();
     }
   }
   function showRecipe(recipe) {
     if(!recipe)return; currentRecipe=recipe;
-    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag">${escapeHtml(v)}</span>`)).join("");
+    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag">${escapeHtml(displayTag(key,v))}</span>`)).join("");
     const url = safeUrl(recipe.url);
     $("recipeModalContent").innerHTML=`<span class="modal-kicker">FROM THE FAMILY RECIPE BOX</span>
       <h2 class="modal-title" id="modalTitle">${escapeHtml(recipe.name)}</h2>
@@ -140,12 +145,12 @@
   function closeModal(){$("recipeModal").classList.add("hidden");currentRecipe=null;}
   function tagPickerMarkup(key,label,selected){
     const options=[...new Set([...allTags(key),...selected])].sort((a,b)=>a.localeCompare(b));
-    const items=options.map(tag=>`<button type="button" class="tag-choice ${selected.includes(tag)?"selected":""}" data-tag-value="${escapeHtml(tag)}" aria-pressed="${selected.includes(tag)}">${escapeHtml(tag)}</button>`).join("");
-    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?selected.map(escapeHtml).join(", "):`Select ${escapeHtml(label.toLowerCase())}…`}</span><span class="tag-picker-chevron" aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${items||'<span class="tag-empty">No options yet. Add a tag below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${escapeHtml(label.toLowerCase())} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
+    const items=options.map(tag=>`<button type="button" class="tag-choice ${selected.includes(tag)?"selected":""}" data-tag-value="${escapeHtml(tag)}" aria-pressed="${selected.includes(tag)}">${escapeHtml(displayTag(key,tag))}</button>`).join("");
+    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?selected.map(v=>escapeHtml(displayTag(key,v))).join(", "):`Select ${escapeHtml(label.toLowerCase())}…`}</span><span class="tag-picker-chevron" aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${items||'<span class="tag-empty">No options yet. Add a tag below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${escapeHtml(label.toLowerCase())} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
   }
   function refreshTagSummary(details){
     const selected=[...details.querySelectorAll('.tag-choice.selected')].map(b=>b.dataset.tagValue);
-    const label=details.querySelector(".tag-picker-summary"); const fieldLabel=details.previousElementSibling?.textContent?.trim().toLowerCase() || "tags"; label.textContent=selected.length?selected.join(", "):`Select ${fieldLabel}…`;
+    const label=details.querySelector(".tag-picker-summary"); const fieldLabel=details.previousElementSibling?.textContent?.trim().toLowerCase() || "tags"; label.textContent=selected.length?selected.map(v=>displayTag(details.dataset.tagPicker,v)).join(", "):`Select ${fieldLabel}…`;
   }
   function openEditor(recipe=null) {
     currentRecipe=recipe;
@@ -169,7 +174,7 @@
       details.querySelector("[data-add-tag]").addEventListener("click",()=>{
         const input=details.querySelector(".tag-add-row input"), value=input.value.trim(); if(!value)return;
         let choice=[...details.querySelectorAll(".tag-choice")].find(x=>normalize(x.dataset.tagValue)===normalize(value));
-        if(!choice){choice=document.createElement("button");choice.type="button";choice.className="tag-choice";choice.dataset.tagValue=value;choice.textContent=value;choice.setAttribute("aria-pressed","false");details.querySelector(".tag-options").appendChild(choice);}
+        if(!choice){choice=document.createElement("button");choice.type="button";choice.className="tag-choice";choice.dataset.tagValue=value;choice.textContent=displayTag(details.dataset.tagPicker,value);choice.setAttribute("aria-pressed","false");details.querySelector(".tag-options").appendChild(choice);}
         choice.classList.add("selected");choice.setAttribute("aria-pressed","true");input.value="";refreshTagSummary(details);
       });
     });

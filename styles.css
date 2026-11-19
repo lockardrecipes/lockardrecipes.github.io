@@ -153,3 +153,22 @@ body{font-size:16px;background:var(--cream);color:var(--ink);font-family:'Manrop
 .tag-add-row input{min-width:0;flex:1;border:1px solid #e2d6ee;border-radius:9px;padding:9px;font:500 12px 'Manrope',sans-serif}
 @media(max-width:760px){.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.recipe-card{aspect-ratio:1/1;grid-template-rows:56% 44%}.recipe-card h3{font-size:16px}.recipe-grid.list-view .recipe-card{aspect-ratio:auto;grid-template-columns:110px minmax(0,1fr);grid-template-rows:104px}.recipe-grid.list-view .recipe-photo{height:104px;min-height:104px}.recipe-grid.list-view .recipe-card-content{min-height:104px}}
 @media(max-width:480px){.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.recipe-card{border-radius:14px;grid-template-rows:54% 46%}.recipe-card-content{padding:9px}.recipe-card h3{font-size:14px}.recipe-card .tag{font-size:9px;padding:4px 6px}.recipe-grid.list-view{grid-template-columns:1fr}.recipe-grid.list-view .recipe-card{grid-template-columns:90px minmax(0,1fr);grid-template-rows:96px}.recipe-grid.list-view .recipe-photo{height:96px;min-height:96px}}
+
+/* Photo reliability: show only owner-provided direct image links. Never guess from recipe-page previews. */
+.recipe-photo{background:linear-gradient(135deg,#f2eafa,#e4d8f1);}
+.recipe-photo-img{object-fit:contain!important;object-position:center!important;padding:8px;background:linear-gradient(135deg,#f8f4fc,#eee5f7);}
+.recipe-photo-placeholder{display:flex;flex-direction:column;gap:7px;color:#9474b3;background:linear-gradient(135deg,#f2eafa,#e4d8f1);}
+.recipe-photo-placeholder small{font:600 10px 'Manrope',sans-serif;color:#826a99;letter-spacing:.2px}
+.recipe-photo.has-photo .recipe-photo-placeholder{display:none}
+.brand small{font-size:11px!important;letter-spacing:2px!important;color:#79519f!important}
+.brand strong{font-size:24px!important;font-weight:800!important;letter-spacing:.4px!important;color:#38234f}
+.site-footer{color:#50336d!important;letter-spacing:1px}
+.site-footer small{letter-spacing:2px}
+
+
+/* Automatic and owner-provided recipe photos: preserve the complete image without distortion. */
+.recipe-photo{background:linear-gradient(135deg,#f2eafa,#e4d8f1);}
+.recipe-photo-img{object-fit:contain!important;object-position:center!important;padding:7px;background:#f8f4fc;}
+.recipe-photo-placeholder{display:flex;flex-direction:column;gap:7px;color:#9474b3;background:linear-gradient(135deg,#f2eafa,#e4d8f1);}
+.recipe-photo-placeholder small{font:600 10px 'Manrope',sans-serif;color:#826a99;letter-spacing:.2px}
+.recipe-photo.has-photo .recipe-photo-placeholder{display:none}
