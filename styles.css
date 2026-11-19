@@ -117,3 +117,39 @@ body{font-size:16px;background:var(--cream);color:var(--ink);font-family:'Manrop
 .form-help{font-size:11px;color:#82728f}
 @media(max-width:760px){.recipe-card{grid-template-rows:64px minmax(100px,1fr)}.recipe-photo{height:64px;min-height:64px}.recipe-card-content{padding:9px 11px 10px}.recipe-card h3{font-size:16px}.recipe-grid.list-view .recipe-card{grid-template-columns:88px minmax(0,1fr)}}
 @media(max-width:480px){.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.recipe-card{min-height:166px;grid-template-rows:60px minmax(106px,1fr)}.recipe-photo{height:60px;min-height:60px}.recipe-card h3{font-size:15px}.recipe-card-content{padding:8px 9px}.recipe-grid.list-view{grid-template-columns:1fr}.recipe-grid.list-view .recipe-card{grid-template-columns:82px minmax(0,1fr)}}
+
+/* Final polish: square recipe cards with generous, consistently cropped photos. */
+.recipe-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.recipe-card{aspect-ratio:1/1;min-height:0;padding:0;display:grid;grid-template-rows:58% 42%;overflow:hidden;border-radius:18px}
+.recipe-photo{width:100%;height:100%;min-height:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#f1e8fa,#ded0ef)}
+.recipe-photo-placeholder{inset:0;width:100%;height:100%;display:grid;place-items:center;font-size:32px}
+.recipe-photo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.recipe-card-content{min-height:0;height:100%;padding:12px 14px 13px;display:flex;flex-direction:column;justify-content:space-between;gap:6px;overflow:hidden}
+.recipe-card-content>div:first-child{min-height:0;overflow:hidden}
+.recipe-card .card-top{align-items:center}
+.recipe-card h3{font-size:17px;line-height:1.2;margin:5px 0 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.recipe-card .card-meta{max-height:44px;overflow:hidden;align-content:flex-start}
+.recipe-grid.list-view{grid-template-columns:1fr;gap:9px}
+.recipe-grid.list-view .recipe-card{aspect-ratio:auto;min-height:112px;grid-template-columns:140px minmax(0,1fr);grid-template-rows:112px;display:grid}
+.recipe-grid.list-view .recipe-photo{height:112px;min-height:112px}
+.recipe-grid.list-view .recipe-card-content{height:auto;min-height:112px;padding:12px 16px;flex-direction:row;align-items:center}
+.recipe-grid.list-view .recipe-card-content>div:first-child{flex:1;min-width:0}
+.recipe-grid.list-view .recipe-card h3{margin:5px 0 0}
+
+/* Clean multi-select dropdowns for recipe tags. */
+.tag-picker{position:relative;width:100%;border:1px solid #dfd1ed;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(64,38,91,.03)}
+.tag-picker summary{min-height:44px;padding:11px 13px;list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#54376f;font:600 13px 'Manrope',sans-serif}
+.tag-picker summary::-webkit-details-marker{display:none}
+.tag-picker-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-picker-chevron{flex:none;color:#8055a8;font-size:16px;transition:transform .15s}
+.tag-picker[open]{border-color:#b99bd6;z-index:4}
+.tag-picker[open] .tag-picker-chevron{transform:rotate(180deg)}
+.tag-picker-menu{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:20;padding:11px;background:#fff;border:1px solid #dfd1ed;border-radius:12px;box-shadow:0 12px 28px rgba(55,32,78,.16);max-height:260px;overflow:auto}
+.tag-options{display:flex;flex-wrap:wrap;gap:7px}
+.tag-choice{border:1px solid #dfd1ed;border-radius:999px;background:#faf7ff;color:#5a4271;padding:7px 10px;font:600 12px 'Manrope',sans-serif;cursor:pointer;transition:background .12s,border-color .12s}
+.tag-choice:hover{border-color:#a984c9;background:#f0e7f8}
+.tag-choice.selected{background:#68418f;color:#fff;border-color:#68418f}
+.tag-add-row{display:flex;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid #f0e8f6}
+.tag-add-row input{min-width:0;flex:1;border:1px solid #e2d6ee;border-radius:9px;padding:9px;font:500 12px 'Manrope',sans-serif}
+@media(max-width:760px){.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.recipe-card{aspect-ratio:1/1;grid-template-rows:56% 44%}.recipe-card h3{font-size:16px}.recipe-grid.list-view .recipe-card{aspect-ratio:auto;grid-template-columns:110px minmax(0,1fr);grid-template-rows:104px}.recipe-grid.list-view .recipe-photo{height:104px;min-height:104px}.recipe-grid.list-view .recipe-card-content{min-height:104px}}
+@media(max-width:480px){.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.recipe-card{border-radius:14px;grid-template-rows:54% 46%}.recipe-card-content{padding:9px}.recipe-card h3{font-size:14px}.recipe-card .tag{font-size:9px;padding:4px 6px}.recipe-grid.list-view{grid-template-columns:1fr}.recipe-grid.list-view .recipe-card{grid-template-columns:90px minmax(0,1fr);grid-template-rows:96px}.recipe-grid.list-view .recipe-photo{height:96px;min-height:96px}}

@@ -141,11 +141,11 @@
   function tagPickerMarkup(key,label,selected){
     const options=[...new Set([...allTags(key),...selected])].sort((a,b)=>a.localeCompare(b));
     const items=options.map(tag=>`<button type="button" class="tag-choice ${selected.includes(tag)?"selected":""}" data-tag-value="${escapeHtml(tag)}" aria-pressed="${selected.includes(tag)}">${escapeHtml(tag)}</button>`).join("");
-    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?selected.map(escapeHtml).join(", "):"Choose ${label.toLowerCase()}"}</span><span aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${items||'<span class="tag-empty">No tags yet. Add one below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${label.toLowerCase()} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
+    return `<div class="form-field tag-field"><label>${label}</label><details class="tag-picker" data-tag-picker="${key}"><summary><span class="tag-picker-summary">${selected.length?selected.map(escapeHtml).join(", "):`Select ${escapeHtml(label.toLowerCase())}…`}</span><span class="tag-picker-chevron" aria-hidden="true">⌄</span></summary><div class="tag-picker-menu"><div class="tag-options">${items||'<span class="tag-empty">No options yet. Add a tag below.</span>'}</div><div class="tag-add-row"><input type="text" placeholder="Add a new tag" aria-label="Add a new ${escapeHtml(label.toLowerCase())} tag"><button type="button" class="button button-outline" data-add-tag="${key}">Add</button></div></div></details></div>`;
   }
   function refreshTagSummary(details){
     const selected=[...details.querySelectorAll('.tag-choice.selected')].map(b=>b.dataset.tagValue);
-    details.querySelector(".tag-picker-summary").textContent=selected.length?selected.join(", "):"Choose tags";
+    const label=details.querySelector(".tag-picker-summary"); const fieldLabel=details.previousElementSibling?.textContent?.trim().toLowerCase() || "tags"; label.textContent=selected.length?selected.join(", "):`Select ${fieldLabel}…`;
   }
   function openEditor(recipe=null) {
     currentRecipe=recipe;
