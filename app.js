@@ -3,12 +3,11 @@
   const CONFIG = window.RECIPE_APP_CONFIG || {};
   const hasSupabase = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase);
   const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
-  // Display and editor order requested by the Lockard family.
   const categories = [
-    ["course","Course"],["cook_method","Cook method"],["effort","Effort"],
-    ["cuisine","Cuisine"],["collection","Collection"],["favorites","Favorites"]
+    ["cook_method","Cook method"],["effort","Effort"],["favorites","Favorites"],
+    ["course","Course"],["collection","Collection"],["cuisine","Cuisine"]
   ];
-  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v4";
+  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v2";
   let recipes = [], activeFilters = {}, view = "grid", currentRecipe = null, toastTimer;
   let imageCache = readImageCache();
   const imageQueue = [];
@@ -16,7 +15,7 @@
   const $ = id => document.getElementById(id);
   const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const normalize = value => String(value || "").trim().toLowerCase();
-  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim().replace(/\s+/g," ").replace(/\b\w/g,c=>c.toUpperCase())}'s Favorite` : value;
+  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim()}'s favorite` : value;
   const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
   const toRecipe = row => ({
     id: row.id ?? null, name: row.name || "", url: row.url || "", photo_url: row.photo_url || "",
@@ -56,7 +55,8 @@
     const automatic = !manual && cached?.url ? cached.url : "";
     const chosen = manual || automatic;
     const source = chosen ? `<img class="recipe-photo-img" src="${escapeHtml(chosen)}" alt="Photo of ${escapeHtml(recipe.name)}" loading="lazy" referrerpolicy="no-referrer">` : "";
-    return `<div class="recipe-photo ${source?"has-photo":""}" data-photo-key="${escapeHtml(key)}" data-recipe-url="${escapeHtml(recipe.url)}" data-manual-photo="${manual?"1":"0"}"><div class="recipe-photo-placeholder" aria-hidden="true"><span>✿</span><small>Photo unavailable</small></div>${source}</div>`;
+    // Keep the photo area empty when neither a manual image nor a recipe-page image is available.
+    return `<div class="recipe-photo ${source?"has-photo":""}" data-photo-key="${escapeHtml(key)}" data-recipe-url="${escapeHtml(recipe.url)}" data-manual-photo="${manual?"1":"0"}">${source}</div>`;
   }
 
   function render() {
@@ -66,10 +66,10 @@
     $("showingText").textContent=found.length===recipes.length?"Showing all recipes":`Showing ${found.length} of ${recipes.length} recipes`;
     $("activeFilterCount").textContent=Object.keys(activeFilters).length;
     grid.innerHTML=found.map(r=>{
-      const meta = categories.flatMap(([key])=>(r[key] || []).map(value=>({key,value}))).slice(0,6);
+      const meta = categories.flatMap(([key])=>r[key]).slice(0,4);
       return `<article class="recipe-card" data-id="${escapeHtml(r.id)}" tabindex="0" role="button" aria-label="Open ${escapeHtml(r.name)}">
         ${photoMarkup(r)}<div class="recipe-card-content"><div><div class="card-top"><span class="eyebrow">${escapeHtml(r.course[0] || "FAMILY RECIPE")}</span><span class="card-arrow">↗</span></div>
-        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(({key,value})=>`<span class="tag ${key==="favorites"?"tag-favorite":""}">${escapeHtml(displayTag(key,value))}</span>`).join("")}</div></div></article>`;
+        <h3>${escapeHtml(r.name)}</h3></div><div class="card-meta">${meta.map(t=>`<span class="tag">${escapeHtml(displayTag(categories.find(([key])=>r[key].includes(t))?.[0] || "",t))}</span>`).join("")}</div></div></article>`;
     }).join("");
     grid.querySelectorAll(".recipe-card").forEach(card=>{
       const open=()=>showRecipe(recipes.find(r=>String(r.id)===card.dataset.id));
@@ -80,11 +80,12 @@
     $("emptyState").classList.toggle("hidden",found.length>0);
   }
 
-  // Best-effort automatic photo lookup from the recipe page's Open Graph image.
-  // Manually entered photo links always take priority. Results are cached per browser.
+  // Best-effort automatic photo lookup from the exact recipe page's Open Graph image.
+  // No generic/stock-photo fallback is used. Manually entered photo links take priority.
+  // If the recipe page has no usable image, the card's photo area stays blank.
   const photoObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries=>entries.forEach(entry=>{
     if(entry.isIntersecting){photoObserver.unobserve(entry.target);queuePhoto(entry.target);}
-  }),{rootMargin:"900px"}) : null;
+  }),{rootMargin:"240px"}) : null;
   function observePhoto(el){
     if(el.dataset.manualPhoto==="1") return;
     const key=el.dataset.photoKey, url=el.dataset.recipeUrl;
@@ -105,7 +106,7 @@
     el.dataset.photoQueued="1"; imageQueue.push(el); runImageQueue();
   }
   function runImageQueue(){
-    while(imageWorkers<3 && imageQueue.length){
+    while(imageWorkers<2 && imageQueue.length){
       const el=imageQueue.shift(); if(!el?.isConnected)continue;
       imageWorkers++;
       fetchPhoto(el).finally(()=>{imageWorkers--;runImageQueue()});
@@ -124,12 +125,12 @@
         imageCache[key]={url:imageUrl}; saveImageCache(); applyPhoto(el,imageUrl);
       } else {imageCache[key]={url:"",retryAfter:Date.now()+7*24*60*60*1000};saveImageCache();}
     }catch(error){
-      imageCache[key]={url:"",retryAfter:Date.now()+60*60*1000};saveImageCache();
+      imageCache[key]={url:"",retryAfter:Date.now()+24*60*60*1000};saveImageCache();
     }
   }
   function showRecipe(recipe) {
     if(!recipe)return; currentRecipe=recipe;
-    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag ${key==="favorites"?"tag-favorite":""}">${escapeHtml(displayTag(key,v))}</span>`)).join("");
+    const all = categories.flatMap(([key])=>recipe[key].map(v=>`<span class="tag">${escapeHtml(displayTag(key,v))}</span>`)).join("");
     const url = safeUrl(recipe.url);
     $("recipeModalContent").innerHTML=`<span class="modal-kicker">FROM THE FAMILY RECIPE BOX</span>
       <h2 class="modal-title" id="modalTitle">${escapeHtml(recipe.name)}</h2>
