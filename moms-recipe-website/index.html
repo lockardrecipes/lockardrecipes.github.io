@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffdf73">
+  <title>Mom's Recipe Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="top-splash"></div>
+  <header class="site-header wrap">
+    <a class="brand" href="#" aria-label="Mom's Recipe Box home">
+      <span class="brand-icon">✿</span>
+      <span><small>THE FAMILY COLLECTION</small><strong>Mom's Recipe Box</strong></span>
+    </a>
+    <nav class="header-actions">
+      <button class="button button-quiet" id="randomTop" type="button">🎲 Surprise me</button>
+      <button class="button button-dark" id="addRecipe" type="button">＋ Add a recipe</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">A LITTLE SOMETHING GOOD IS COOKING</span>
+        <h1>Find your next<br><em>favorite meal.</em></h1>
+        <p>Family favorites, tried-and-true classics, and something new to make tonight.</p>
+        <div class="hero-stats">
+          <div><strong id="recipeCount">278</strong><span>recipes to explore</span></div>
+          <div class="stat-divider"></div>
+          <div><strong>♥</strong><span>made with love</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-sun"></div><div class="art-plate"><div class="plate-inner">🍝</div></div>
+        <span class="doodle doodle-one">✳</span><span class="doodle doodle-two">✦</span>
+        <span class="art-note">gather<br>around<br>the table</span>
+      </div>
+    </section>
+
+    <section class="discovery">
+      <div class="section-heading">
+        <div><span class="eyebrow">YOUR DIGITAL COOKBOOK</span><h2>Browse the recipe box</h2></div>
+        <span class="count-pill" id="resultCount">278 recipes</span>
+      </div>
+      <div class="search-row">
+        <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search recipes by name, tag, or ingredient…" autocomplete="off"><kbd>SEARCH</kbd></label>
+        <button class="button button-outline" id="toggleFilters" type="button">☷ Filters <span id="activeFilterCount" class="filter-count">0</span></button>
+      </div>
+      <div class="filter-panel" id="filterPanel">
+        <div class="filter-panel-head"><strong>Find just what you're craving</strong><button id="clearFilters" class="text-button" type="button">Clear all</button></div>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-left"><span id="showingText">Showing all recipes</span></div>
+        <div class="toolbar-right">
+          <label class="sort-label">Sort <select id="sortSelect"><option value="az">Name A–Z</option><option value="za">Name Z–A</option></select></label>
+          <div class="view-switch" aria-label="Recipe view">
+            <button class="view-button selected" data-view="grid" aria-label="Grid view" title="Grid view">▦</button>
+            <button class="view-button" data-view="list" aria-label="List view" title="List view">☰</button>
+          </div>
+        </div>
+      </div>
+      <div id="recipeGrid" class="recipe-grid"></div>
+      <div id="emptyState" class="empty-state hidden"><span>🥣</span><h3>No recipes found</h3><p>Try changing your search or clearing a few filters.</p><button class="button button-outline" id="emptyClear" type="button">Clear filters</button></div>
+    </section>
+
+    <section class="picker-banner">
+      <div class="picker-icon">🎲</div>
+      <div><span class="eyebrow">CAN'T DECIDE?</span><h2>Let the recipe box choose.</h2><p>Your random pick will respect the search and filters you've selected.</p></div>
+      <button class="button button-dark" id="randomButton" type="button">Pick my recipe <span>→</span></button>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>✿</span> Mom's Recipe Box <small>Good food. Great memories.</small></footer>
+
+  <div class="modal-backdrop hidden" id="recipeModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="closeModal" aria-label="Close">×</button>
+      <div id="recipeModalContent"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
