@@ -8,7 +8,7 @@
     ["course","Course"],["cook_method","Cook method"],["effort","Effort"],
     ["cuisine","Cuisine"],["collection","Collection"],["favorites","Favorites"]
   ];
-  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v2";
+  const IMAGE_CACHE_KEY = "moms-recipe-box-image-cache-v4";
   let recipes = [], activeFilters = {}, view = "grid", currentRecipe = null, toastTimer;
   let imageCache = readImageCache();
   const imageQueue = [];
@@ -84,7 +84,7 @@
   // Manually entered photo links always take priority. Results are cached per browser.
   const photoObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries=>entries.forEach(entry=>{
     if(entry.isIntersecting){photoObserver.unobserve(entry.target);queuePhoto(entry.target);}
-  }),{rootMargin:"240px"}) : null;
+  }),{rootMargin:"900px"}) : null;
   function observePhoto(el){
     if(el.dataset.manualPhoto==="1") return;
     const key=el.dataset.photoKey, url=el.dataset.recipeUrl;
@@ -105,7 +105,7 @@
     el.dataset.photoQueued="1"; imageQueue.push(el); runImageQueue();
   }
   function runImageQueue(){
-    while(imageWorkers<2 && imageQueue.length){
+    while(imageWorkers<3 && imageQueue.length){
       const el=imageQueue.shift(); if(!el?.isConnected)continue;
       imageWorkers++;
       fetchPhoto(el).finally(()=>{imageWorkers--;runImageQueue()});
@@ -124,7 +124,7 @@
         imageCache[key]={url:imageUrl}; saveImageCache(); applyPhoto(el,imageUrl);
       } else {imageCache[key]={url:"",retryAfter:Date.now()+7*24*60*60*1000};saveImageCache();}
     }catch(error){
-      imageCache[key]={url:"",retryAfter:Date.now()+24*60*60*1000};saveImageCache();
+      imageCache[key]={url:"",retryAfter:Date.now()+60*60*1000};saveImageCache();
     }
   }
   function showRecipe(recipe) {

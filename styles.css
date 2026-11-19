@@ -179,3 +179,15 @@ body{font-size:16px;background:var(--cream);color:var(--ink);font-family:'Manrop
 .recipe-photo{background:#e9def4;}
 .recipe-photo.has-photo .recipe-photo-placeholder{display:none;}
 .recipe-card .tag-favorite,.modal-tags .tag-favorite{background:#f5d9ff!important;color:#9b22b5!important;border:1px solid #edc3fa!important;font-weight:800!important;}
+
+
+/* Universal photo layout fix: each image area spans the full card width. */
+.recipe-card{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:58% 42%!important;}
+.recipe-card>.recipe-photo{grid-column:1 / -1!important;grid-row:1!important;width:100%!important;min-width:0!important;justify-self:stretch!important;align-self:stretch!important;}
+.recipe-card>.recipe-card-content{grid-column:1 / -1!important;grid-row:2!important;width:100%!important;min-width:0!important;}
+.recipe-photo-img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;}
+.recipe-grid.list-view .recipe-card{grid-template-columns:140px minmax(0,1fr)!important;grid-template-rows:112px!important;}
+.recipe-grid.list-view .recipe-card>.recipe-photo{grid-column:1!important;grid-row:1!important;}
+.recipe-grid.list-view .recipe-card>.recipe-card-content{grid-column:2!important;grid-row:1!important;}
+@media(max-width:760px){.recipe-grid.list-view .recipe-card{grid-template-columns:110px minmax(0,1fr)!important;grid-template-rows:104px!important;}}
+@media(max-width:480px){.recipe-grid.list-view .recipe-card{grid-template-columns:90px minmax(0,1fr)!important;grid-template-rows:96px!important;}}
