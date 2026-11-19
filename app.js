@@ -252,3 +252,23 @@
   }
   init();
 })();
+
+.recipe-card-content {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 6px;
+}
+
+.recipe-card {
+  height: auto;
+  min-height: 0;
+}
