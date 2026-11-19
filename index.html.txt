@@ -1,0 +1,683 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Recipe Collection</title>
+
+<!-- Excel spreadsheet reader -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root {
+    --bg: #f8f7f3;
+    --card: #ffffff;
+    --primary: #657b59;
+    --primary-dark: #4d6244;
+    --text: #30352e;
+    --muted: #777d73;
+    --border: #e7e7df;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+header {
+    background: var(--primary);
+    color: white;
+    padding: 35px 20px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: 36px;
+}
+
+header p {
+    margin-bottom: 0;
+    opacity: .9;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 25px 20px;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+input, select, button {
+    font: inherit;
+}
+
+.search {
+    flex: 1;
+    min-width: 220px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: white;
+}
+
+button {
+    border: none;
+    cursor: pointer;
+    border-radius: 9px;
+    padding: 12px 18px;
+    font-weight: bold;
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.primary-btn:hover {
+    background: var(--primary-dark);
+}
+
+.secondary-btn {
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.upload-area {
+    background: white;
+    border: 2px dashed #cbd2c3;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.upload-area input {
+    margin-top: 12px;
+    max-width: 100%;
+}
+
+.filters {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.filters h3 {
+    margin-top: 0;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.tag-option {
+    background: #f1f3ed;
+    border: 1px solid #e0e5d9;
+    border-radius: 20px;
+    padding: 8px 13px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tag-option.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+    color: var(--muted);
+}
+
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.recipe-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.recipe-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 18px #00000012;
+}
+
+.recipe-card h3 {
+    font-family: Georgia, serif;
+    margin: 0 0 12px;
+    font-size: 21px;
+}
+
+.recipe-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 15px;
+}
+
+.recipe-tag {
+    background: #eef1e9;
+    color: var(--primary-dark);
+    padding: 5px 9px;
+    border-radius: 15px;
+    font-size: 11px;
+}
+
+.recipe-description {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+}
+
+.random-area {
+    text-align: center;
+    background: #edf0e8;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.random-area h2 {
+    font-family: Georgia, serif;
+    margin-top: 0;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0009;
+    z-index: 10;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background: white;
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 30px;
+    border-radius: 14px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 18px;
+    top: 12px;
+    font-size: 27px;
+    background: none;
+    color: var(--text);
+}
+
+.modal-content h2 {
+    font-family: Georgia, serif;
+    font-size: 30px;
+    padding-right: 30px;
+}
+
+.modal-content h3 {
+    margin-top: 25px;
+    color: var(--primary-dark);
+}
+
+.recipe-content {
+    white-space: pre-wrap;
+    line-height: 1.7;
+}
+
+footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media(max-width:600px) {
+    header h1 { font-size: 29px; }
+    .container { padding: 15px; }
+    .modal-content { padding: 22px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>My Recipe Collection</h1>
+    <p>Find something delicious to make today.</p>
+</header>
+
+<main class="container">
+
+    <section class="upload-area">
+        <strong>Import Your Recipe Spreadsheet</strong>
+        <p>Upload your Excel file to populate your recipe collection.</p>
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+        <p id="uploadStatus">No spreadsheet uploaded yet.</p>
+    </section>
+
+    <section class="random-area">
+        <h2>Feeling Indecisive?</h2>
+        <p>Let us choose a recipe for you based on your selected filters.</p>
+        <button class="primary-btn" onclick="pickRandom()">
+            Pick a Random Recipe
+        </button>
+        <p id="randomStatus"></p>
+    </section>
+
+    <div class="toolbar">
+        <input
+            class="search"
+            type="search"
+            id="searchInput"
+            placeholder="Search recipes, ingredients..."
+            oninput="renderRecipes()"
+        >
+        <button class="secondary-btn" onclick="clearFilters()">
+            Clear Filters
+        </button>
+    </div>
+
+    <section class="filters">
+        <h3>Filter by Tags</h3>
+        <div id="tagFilters" class="tag-list">
+            <p>Upload a spreadsheet to see available tags.</p>
+        </div>
+    </section>
+
+    <div class="stats">
+        <span id="recipeCount">0 recipes</span>
+        <span id="filterCount"></span>
+    </div>
+
+    <section id="recipeGrid" class="recipe-grid">
+        <div class="empty">
+            <h2>Welcome to your recipe collection!</h2>
+            <p>Upload your Excel spreadsheet to get started.</p>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    My Recipe Collection
+</footer>
+
+<!-- Recipe details popup -->
+<div class="modal" id="recipeModal" onclick="closeOutside(event)">
+    <div class="modal-content">
+        <button class="close" onclick="closeModal()">×</button>
+        <div id="recipeDetails"></div>
+    </div>
+</div>
+
+<script>
+
+let recipes = [];
+let selectedTags = new Set();
+
+// Find spreadsheet columns using flexible header names.
+function getField(row, names) {
+    const keys = Object.keys(row);
+
+    for (const name of names) {
+        const key = keys.find(k =>
+            k.toLowerCase().trim() === name.toLowerCase()
+        );
+
+        if (key !== undefined && row[key] != null) {
+            return String(row[key]).trim();
+        }
+    }
+
+    return "";
+}
+
+// Convert spreadsheet rows into recipe objects.
+function normalizeRecipe(row) {
+    const name = getField(row, [
+        "Recipe", "Recipe Name", "Name", "Title"
+    ]);
+
+    const tagText = getField(row, [
+        "Tags", "Tag", "Categories", "Category"
+    ]);
+
+    return {
+        name: name,
+        ingredients: getField(row, [
+            "Ingredients", "Ingredient"
+        ]),
+        instructions: getField(row, [
+            "Instructions", "Directions", "Method", "Steps"
+        ]),
+        description: getField(row, [
+            "Description", "Notes", "Summary"
+        ]),
+        tags: tagText.split(/[,;|]/)
+            .map(t => t.trim())
+            .filter(Boolean),
+        prepTime: getField(row, [
+            "Prep Time", "Cooking Time", "Time"
+        ]),
+        servings: getField(row, [
+            "Servings", "Yield"
+        ])
+    };
+}
+
+// Upload and read Excel file.
+document.getElementById("excelFile")
+.addEventListener("change", function(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        try {
+            const workbook = XLSX.read(e.target.result, {
+                type: "array"
+            });
+
+            const sheet = workbook.Sheets[
+                workbook.SheetNames[0]
+            ];
+
+            const data = XLSX.utils.sheet_to_json(sheet, {
+                defval: ""
+            });
+
+            recipes = data
+                .map(normalizeRecipe)
+                .filter(r => r.name);
+
+            selectedTags.clear();
+
+            if (!recipes.length) {
+                throw new Error(
+                    "No recipes found. Check your spreadsheet headers."
+                );
+            }
+
+            document.getElementById("uploadStatus").textContent =
+                "Successfully loaded " + recipes.length + " recipes!";
+
+            buildTagFilters();
+            renderRecipes();
+
+        } catch (error) {
+            document.getElementById("uploadStatus").textContent =
+                "Error: " + error.message;
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+});
+
+// Create tag filter buttons.
+function buildTagFilters() {
+
+    const allTags = [...new Set(
+        recipes.flatMap(r => r.tags)
+    )].sort((a,b) => a.localeCompare(b));
+
+    const container = document.getElementById("tagFilters");
+    container.innerHTML = "";
+
+    allTags.forEach(tag => {
+
+        const button = document.createElement("button");
+        button.className = "tag-option";
+        button.textContent = tag;
+
+        button.onclick = () => {
+
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                button.classList.remove("active");
+            } else {
+                selectedTags.add(tag);
+                button.classList.add("active");
+            }
+
+            renderRecipes();
+        };
+
+        container.appendChild(button);
+    });
+
+    if (!allTags.length) {
+        container.textContent = "No tags found in spreadsheet.";
+    }
+}
+
+// Get recipes matching search and filters.
+function getFilteredRecipes() {
+
+    const search = document.getElementById("searchInput")
+        .value.toLowerCase().trim();
+
+    return recipes.filter(recipe => {
+
+        const searchable = [
+            recipe.name,
+            recipe.ingredients,
+            recipe.description,
+            recipe.instructions,
+            recipe.tags.join(" ")
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = searchable.includes(search);
+
+        // All selected tags must match.
+        const matchesTags = [...selectedTags].every(tag =>
+            recipe.tags.includes(tag)
+        );
+
+        return matchesSearch && matchesTags;
+    });
+}
+
+// Display recipe cards.
+function renderRecipes() {
+
+    const filtered = getFilteredRecipes();
+    const grid = document.getElementById("recipeGrid");
+
+    document.getElementById("recipeCount").textContent =
+        filtered.length + " recipes found";
+
+    document.getElementById("filterCount").textContent =
+        selectedTags.size
+        ? selectedTags.size + " active tag filters"
+        : "Showing all matching recipes";
+
+    grid.innerHTML = "";
+
+    if (!filtered.length) {
+        grid.innerHTML = `
+            <div class="empty">
+                <h2>No recipes found</h2>
+                <p>Try changing your search or filters.</p>
+            </div>
+        `;
+        return;
+    }
+
+    filtered.forEach(recipe => {
+
+        const card = document.createElement("article");
+        card.className = "recipe-card";
+
+        const title = document.createElement("h3");
+        title.textContent = recipe.name;
+
+        const description = document.createElement("p");
+        description.className = "recipe-description";
+        description.textContent =
+            recipe.description || "Click to view this recipe.";
+
+        const meta = document.createElement("p");
+        meta.className = "recipe-description";
+
+        const details = [];
+        if (recipe.prepTime) details.push(recipe.prepTime);
+        if (recipe.servings) details.push(recipe.servings + " servings");
+        meta.textContent = details.join(" • ");
+
+        const tags = document.createElement("div");
+        tags.className = "recipe-tags";
+
+        recipe.tags.forEach(tag => {
+            const span = document.createElement("span");
+            span.className = "recipe-tag";
+            span.textContent = tag;
+            tags.appendChild(span);
+        });
+
+        card.append(title, description, meta, tags);
+        card.onclick = () => showRecipe(recipe);
+
+        grid.appendChild(card);
+    });
+}
+
+// Open recipe details.
+function showRecipe(recipe) {
+
+    const details = document.getElementById("recipeDetails");
+    details.innerHTML = "";
+
+    function addSection(title, content) {
+        const heading = document.createElement("h3");
+        heading.textContent = title;
+
+        const text = document.createElement("div");
+        text.className = "recipe-content";
+        text.textContent = content || "Not provided.";
+
+        details.append(heading, text);
+    }
+
+    const title = document.createElement("h2");
+    title.textContent = recipe.name;
+    details.appendChild(title);
+
+    if (recipe.tags.length) {
+        const tags = document.createElement("p");
+        tags.textContent = recipe.tags.join(" • ");
+        details.appendChild(tags);
+    }
+
+    if (recipe.prepTime) {
+        addSection("Time", recipe.prepTime);
+    }
+
+    if (recipe.servings) {
+        addSection("Servings", recipe.servings);
+    }
+
+    addSection("Ingredients", recipe.ingredients);
+    addSection("Instructions", recipe.instructions);
+
+    if (recipe.description) {
+        addSection("Notes", recipe.description);
+    }
+
+    document.getElementById("recipeModal").style.display = "block";
+}
+
+function closeModal() {
+    document.getElementById("recipeModal").style.display = "none";
+}
+
+function closeOutside(event) {
+    if (event.target.id === "recipeModal") {
+        closeModal();
+    }
+}
+
+// Pick a random recipe from currently filtered results.
+function pickRandom() {
+
+    const filtered = getFilteredRecipes();
+
+    if (!filtered.length) {
+        document.getElementById("randomStatus").textContent =
+            "No recipes match your current filters!";
+        return;
+    }
+
+    const randomIndex = Math.floor(
+        Math.random() * filtered.length
+    );
+
+    const recipe = filtered[randomIndex];
+
+    document.getElementById("randomStatus").textContent =
+        "Tonight's choice: " + recipe.name;
+
+    showRecipe(recipe);
+}
+
+// Reset all filters.
+function clearFilters() {
+
+    selectedTags.clear();
+
+    document.getElementById("searchInput").value = "";
+
+    buildTagFilters();
+    renderRecipes();
+
+    document.getElementById("randomStatus").textContent = "";
+}
+
+</script>
+
+</body>
+</html>
