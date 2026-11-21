@@ -19,8 +19,11 @@
   const $ = id => document.getElementById(id);
   const escapeHtml = (value="") => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const normalize = value => String(value || "").trim().toLowerCase();
-  const displayTag = (key, value) => key === "favorites" ? `${String(value).trim()}'s favorite` : value;
-  const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
+const displayTag = (key, value) => {
+  if (key === "favorites") return `${String(value).trim()}'s favorite`;
+  if (key === "effort") return `${String(value).trim()} effort`;
+  return value;
+};  const tags = value => Array.isArray(value) ? value : (value ? String(value).split(",").map(x=>x.trim()).filter(Boolean) : []);
   const toRecipe = row => ({
     id: row.id ?? null, name: row.name || "", url: row.url || "", photo_url: row.photo_url || "",
     cook_method: tags(row.cook_method), effort: tags(row.effort), favorites: tags(row.favorites),
