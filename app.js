@@ -245,6 +245,13 @@ const meta = categories
     $("addRecipe").addEventListener("click",()=>openEditor()); $("randomButton").addEventListener("click",pickRandom); $("randomTop").addEventListener("click",pickRandom);
     $("closeModal").addEventListener("click",closeModal);
     $("recipeModal").addEventListener("click",e=>{if(e.target===$("recipeModal"))closeModal();});
+    document.addEventListener("click",e=>{
+  document.querySelectorAll(".tag-picker[open]").forEach(details=>{
+    if(!details.contains(e.target)){
+      details.removeAttribute("open");
+    }
+  });
+});
     document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
     document.querySelectorAll(".view-button").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;document.querySelectorAll(".view-button").forEach(x=>x.classList.toggle("selected",x===b));render();}));
   }
